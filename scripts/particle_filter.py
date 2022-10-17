@@ -37,7 +37,7 @@ def draw_random_sample():
     """ Draws a random sample of n elements from a given list of choices and their specified probabilities.
     We recommend that you fill in this function using random_sample.
     """
-    # TODO
+   # TODO
     return
 
 
@@ -119,10 +119,12 @@ class ParticleFilter:
     def get_map(self, data):
 
         self.map = data
-    
+
 
     def initialize_particle_cloud(self):
-        
+        # self.num_particles
+	for p in range(1, self.num_particles):
+		 
         # TODO
 
 
