@@ -125,6 +125,20 @@ class ParticleFilter:
         
         # TODO
 
+        for i in range (0, self.num_particles):
+            randx = random.uniform(self.map.origin.position.x - (self.map.width)/2, self.map.origin.position.x + (self.map.width)/2)
+            randy = random.uniform(self.map.origin.position.y - (self.map.height)/2, self.map.origin.position.y + (self.map.height)/2)
+            z = 0
+            randtheta = randint(0, 360)
+            randPoint = Point(randx, randy, z)
+            # what is quarternion
+            randAngle = Quaternion(0, 0, randtheta, 0)
+            randPose = Pose(randPoint, randAngle)
+
+            sampleParticle = Particle(randPose, 1/self.num_particles)
+
+            self.particle_cloud.append(sampleParticle)
+
 
         self.normalize_particles()
 
@@ -133,6 +147,11 @@ class ParticleFilter:
 
     def normalize_particles(self):
         # make all the particle weights sum to 1.0
+        totalweight = 0
+        for p in self.particle_cloud:
+            totalweight += p.w
+        for p in self.particle_cloud:
+            p = p/totalweight
         
         # TODO
 
@@ -241,7 +260,22 @@ class ParticleFilter:
 
     def update_estimated_robot_pose(self):
         # based on the particles within the particle cloud, update the robot pose estimate
-        
+        totalx = 0
+        totaly = 0
+        totalangle = 0
+        # what is quaternion
+        for p in self.particle_cloud:
+            totalx += p.pose.Point.x
+            totaly += p.pose.Point.y
+            totalangle += p.pose.Quaternion.z
+        totalx = totalx / self.num_particles
+        totaly = totaly / self.num_particles
+        totalangle = totalangle / self.num_particles
+
+        newPose = Pose()
+        # figure out what yaw is before proceeding
+
+        self.robot_estimate = Pose()
         # TODO
 
 
