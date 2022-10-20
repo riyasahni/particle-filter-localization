@@ -122,22 +122,21 @@ class ParticleFilter:
 
 
     def initialize_particle_cloud(self):
-        # self.num_particles
-		 
-        # TODO
 
-        for i in range (0, self.num_particles):
+        for i in range (0, self.num_particles): # initialize random x,y starting position of particle
             randx = random.uniform(self.map.origin.position.x - (self.map.width)/2, self.map.origin.position.x + (self.map.width)/2)
             randy = random.uniform(self.map.origin.position.y - (self.map.height)/2, self.map.origin.position.y + (self.map.height)/2)
             z = 0
-            randtheta = randint(0, 360)
+
             randPoint = Point(randx, randy, z)
-            # what is quarternion
-            randAngle = Quaternion(0, 0, randtheta, 0)
-            randPose = Pose(randPoint, randAngle)
-
+            # select random particle direction for particle
+            randDirEuler =random.uniform(0, 2*np.py)
+            # conver euler to quaternion
+            randDir = quaternion_from_euler(0,0,randDirEuler)
+            # create random pose with random position and random direction
+            randPose = Pose(randPoint, randDir)
+            # create new random particle with average weight
             sampleParticle = Particle(randPose, 1/self.num_particles)
-
             self.particle_cloud.append(sampleParticle)
 
 
@@ -153,9 +152,6 @@ class ParticleFilter:
             totalweight += p.w
         for p in self.particle_cloud:
             p = p/totalweight
-        
-        # TODO
-
 
 
     def publish_particle_cloud(self):
