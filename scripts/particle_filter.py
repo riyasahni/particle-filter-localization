@@ -33,23 +33,14 @@ def get_yaw_from_pose(p):
     return yaw
 
 
-def draw_random_sample(particle_cloud, num_particles):
-    """ Draws a random sample of n elements from a given list of choices and their specified probabilities.
-    We recommend that you fill in this function using random_sample.
-    """
-
-    weights = []
-
-    for i in particle_cloud:
-        weights.append(i.w)
-
-    new_particle_array = random.choices(particle_cloud, weights, k = num_particles)
-    return new_particle_array
-    
-
-   # TODO
-    return
-
+#def draw_random_sample(particle_cloud, num_particles):
+#   """ Draws a random sample of n elements from a given list of choices and their specified probabilities.
+#   We recommend that you fill in this function using random_sample.
+#    """
+#
+#    TODO
+#    return
+#
 
 class Particle:
 
@@ -94,7 +85,7 @@ class ParticleFilter:
         self.robot_estimate = Pose()
 
         # set threshold values for linear and angular movement before we preform an update
-        self.lin_mvmt_threshold = 0.2        
+        self.lin_mvmt_threshold = 0.2
         self.ang_mvmt_threshold = (np.pi / 6)
 
         self.odom_pose_last_motion_update = None
@@ -188,8 +179,16 @@ class ParticleFilter:
 
 
     def resample_particles(self):
+        # initialize empty array for particle weights
+        weights = []
 
-        # TODO
+        # fill array with weights of existing particles
+        for i in self.particle_cloud:
+            weights.append(i.w)
+
+        # regenerate particle array using weights of previous particles
+        new_particle_array = random.choices(self.particle_cloud, weights, k = self.num_particles)
+        return new_particle_array
 
 
 
@@ -204,12 +203,12 @@ class ParticleFilter:
             return
 
         # wait for a little bit for the transform to become avaliable (in case the scan arrives
-        # a little bit before the odom to base_footprint transform was updated) 
+        # a little bit before the odom to base_footprint transform was updated)
         self.tf_listener.waitForTransform(self.base_frame, self.odom_frame, data.header.stamp, rospy.Duration(0.5))
         if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
             return
 
-        # calculate the pose of the laser distance sensor 
+        # calculate the pose of the laser distance sensor
         p = PoseStamped(
             header=Header(stamp=rospy.Time(0),
                           frame_id=data.header.frame_id))
@@ -290,7 +289,7 @@ class ParticleFilter:
         #m make the new pose and update the estimate
         newPose = Pose(avgPoint, avgQuat)
         self.robot_estimate = newPose
-    
+
     def update_particle_weights_with_measurement_model(self, data):
 
         # TODO
@@ -305,10 +304,12 @@ class ParticleFilter:
 
         # TODO
 
+        
+
 
 
 if __name__=="__main__":
-    
+
 
     pf = ParticleFilter()
 
