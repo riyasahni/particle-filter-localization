@@ -131,7 +131,7 @@ class ParticleFilter:
 
             randPoint = Point(randx, randy, z)
             # select random particle direction for particle
-            randDirEuler = uniform(0, 2*np.py)
+            randDirEuler = uniform(0, 2*np.pi)
             # conver euler to quaternion
             randDir = quaternion_from_euler(0,0,randDirEuler)
             # create random pose with random position and random direction
