@@ -264,43 +264,43 @@ class ParticleFilter:
 
 
 
-    # def update_estimated_robot_pose(self):
-    #     # based on the particles within the particle cloud, update the robot pose estimate
-    #     totalx = 0
-    #     totaly = 0
-    #     totalangle = 0
+    def update_estimated_robot_pose(self):
+        # based on the particles within the particle cloud, update the robot pose estimate
+        totalx = 0
+        totaly = 0
+        totalangle = 0
 
-    #     # iterate through all the particles and get the totals for these values
-    #     for p in self.particle_cloud:
-    #         totalx += p.pose.Point.x
-    #         totaly += p.pose.Point.y
-    #         # the z value is the only one we care about
-    #         totalangle += get_yaw_from_pose(p.pose)
+        # iterate through all the particles and get the totals for these values
+        for p in self.particle_cloud:
+            totalx += p.pose.Point.x
+            totaly += p.pose.Point.y
+            # the z value is the only one we care about
+            totalangle += get_yaw_from_pose(p.pose)
 
-    #     # get the averages
-    #     avgx = totalx / self.num_particles
-    #     avgy = totaly / self.num_particles
-    #     avgangle = totalangle / self.num_particles
+        # get the averages
+        avgx = totalx / self.num_particles
+        avgy = totaly / self.num_particles
+        avgangle = totalangle / self.num_particles
 
-    #     # make the new point and quaternion
-    #     avgPoint = Point(avgx, avgy, 0)
-    #     avgQuat = quaternion_from_euler(0, 0, avgangle)
+        # make the new point and quaternion
+        avgPoint = Point(avgx, avgy, 0)
+        avgQuat = quaternion_from_euler(0, 0, avgangle)
 
-    #     #m make the new pose and update the estimate
-    #     newPose = Pose(avgPoint, avgQuat)
-    #     self.robot_estimate = newPose
+        #m make the new pose and update the estimate
+        newPose = Pose(avgPoint, avgQuat)
+        self.robot_estimate = newPose
 
-    # def update_particle_weights_with_measurement_model(self, data):
-    #     return
-    #     # TODO
+    def update_particle_weights_with_measurement_model(self, data):
+        return
+        # TODO
 
 
-    # def update_particles_with_motion_model(self):
-    #     return
-    #     # based on the how the robot has moved (calculated from its odometry), we'll  move
-    #     # all of the particles correspondingly
+    def update_particles_with_motion_model(self):
+        return
+        # based on the how the robot has moved (calculated from its odometry), we'll  move
+        # all of the particles correspondingly
 
-    #     # TODO
+        # TODO
 
 
 
