@@ -16,7 +16,7 @@ import numpy as np
 from numpy.random import random_sample
 import math
 
-from random import randint, random
+from random import randint, random, uniform
 
 
 
