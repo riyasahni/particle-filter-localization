@@ -192,75 +192,75 @@ class ParticleFilter:
 
 
 
-    # def robot_scan_received(self, data):
+    def robot_scan_received(self, data):
 
-    #     # wait until initialization is complete
-    #     if not(self.initialized):
-    #         return
+        # wait until initialization is complete
+        if not(self.initialized):
+            return
 
-    #     # we need to be able to transfrom the laser frame to the base frame
-    #     if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
-    #         return
+        # we need to be able to transfrom the laser frame to the base frame
+        if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
+            return
 
-    #     # wait for a little bit for the transform to become avaliable (in case the scan arrives
-    #     # a little bit before the odom to base_footprint transform was updated)
-    #     self.tf_listener.waitForTransform(self.base_frame, self.odom_frame, data.header.stamp, rospy.Duration(0.5))
-    #     if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
-    #         return
+        # wait for a little bit for the transform to become avaliable (in case the scan arrives
+        # a little bit before the odom to base_footprint transform was updated)
+        self.tf_listener.waitForTransform(self.base_frame, self.odom_frame, data.header.stamp, rospy.Duration(0.5))
+        if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
+            return
 
-    #     # calculate the pose of the laser distance sensor
-    #     p = PoseStamped(
-    #         header=Header(stamp=rospy.Time(0),
-    #                       frame_id=data.header.frame_id))
+        # calculate the pose of the laser distance sensor
+        p = PoseStamped(
+            header=Header(stamp=rospy.Time(0),
+                          frame_id=data.header.frame_id))
 
-    #     self.laser_pose = self.tf_listener.transformPose(self.base_frame, p)
+        self.laser_pose = self.tf_listener.transformPose(self.base_frame, p)
 
-    #     # determine where the robot thinks it is based on its odometry
-    #     p = PoseStamped(
-    #         header=Header(stamp=data.header.stamp,
-    #                       frame_id=self.base_frame),
-    #         pose=Pose())
+        # determine where the robot thinks it is based on its odometry
+        p = PoseStamped(
+            header=Header(stamp=data.header.stamp,
+                          frame_id=self.base_frame),
+            pose=Pose())
 
-    #     self.odom_pose = self.tf_listener.transformPose(self.odom_frame, p)
+        self.odom_pose = self.tf_listener.transformPose(self.odom_frame, p)
 
-    #     # we need to be able to compare the current odom pose to the prior odom pose
-    #     # if there isn't a prior odom pose, set the odom_pose variable to the current pose
-    #     if not self.odom_pose_last_motion_update:
-    #         self.odom_pose_last_motion_update = self.odom_pose
-    #         return
+        # we need to be able to compare the current odom pose to the prior odom pose
+        # if there isn't a prior odom pose, set the odom_pose variable to the current pose
+        if not self.odom_pose_last_motion_update:
+            self.odom_pose_last_motion_update = self.odom_pose
+            return
 
 
-    #     if self.particle_cloud:
+        if self.particle_cloud:
 
-    #         # check to see if we've moved far enough to perform an update
+            # check to see if we've moved far enough to perform an update
 
-    #         curr_x = self.odom_pose.pose.position.x
-    #         old_x = self.odom_pose_last_motion_update.pose.position.x
-    #         curr_y = self.odom_pose.pose.position.y
-    #         old_y = self.odom_pose_last_motion_update.pose.position.y
-    #         curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
-    #         old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
+            curr_x = self.odom_pose.pose.position.x
+            old_x = self.odom_pose_last_motion_update.pose.position.x
+            curr_y = self.odom_pose.pose.position.y
+            old_y = self.odom_pose_last_motion_update.pose.position.y
+            curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
+            old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
 
-    #         if (np.abs(curr_x - old_x) > self.lin_mvmt_threshold or 
-    #             np.abs(curr_y - old_y) > self.lin_mvmt_threshold or
-    #             np.abs(curr_yaw - old_yaw) > self.ang_mvmt_threshold):
+            if (np.abs(curr_x - old_x) > self.lin_mvmt_threshold or 
+                np.abs(curr_y - old_y) > self.lin_mvmt_threshold or
+                np.abs(curr_yaw - old_yaw) > self.ang_mvmt_threshold):
 
-    #             # This is where the main logic of the particle filter is carried out
+                # This is where the main logic of the particle filter is carried out
 
-    #             self.update_particles_with_motion_model()
+                self.update_particles_with_motion_model()
 
-    #             self.update_particle_weights_with_measurement_model(data)
+                self.update_particle_weights_with_measurement_model(data)
 
-    #             self.normalize_particles()
+                self.normalize_particles()
 
-    #             self.resample_particles()
+                self.resample_particles()
 
-    #             self.update_estimated_robot_pose()
+                self.update_estimated_robot_pose()
 
-    #             self.publish_particle_cloud()
-    #             self.publish_estimated_robot_pose()
+                self.publish_particle_cloud()
+                self.publish_estimated_robot_pose()
 
-    #             self.odom_pose_last_motion_update = self.odom_pose
+                self.odom_pose_last_motion_update = self.odom_pose
 
 
 
