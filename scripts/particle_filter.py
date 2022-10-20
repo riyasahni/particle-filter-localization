@@ -123,7 +123,6 @@ class ParticleFilter:
 
     def initialize_particle_cloud(self):
         # self.num_particles
-	for p in range(1, self.num_particles):
 		 
         # TODO
 
