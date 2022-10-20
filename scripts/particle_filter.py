@@ -60,7 +60,7 @@ class ParticleFilter:
     def __init__(self):
 
         # once everything is setup initialized will be set to true
-        self.initialized = False        
+        self.initialized = False
 
 
         # initialize this particle filter node
@@ -76,7 +76,7 @@ class ParticleFilter:
         self.map = OccupancyGrid()
 
         # the number of particles used in the particle filter
-        self.num_particles = 10000
+        self.num_particles = 5
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -295,8 +295,6 @@ class ParticleFilter:
     #     # TODO
 
 
-        
-
     # def update_particles_with_motion_model(self):
     #     return
     #     # based on the how the robot has moved (calculated from its odometry), we'll  move
@@ -304,7 +302,7 @@ class ParticleFilter:
 
     #     # TODO
 
-        
+
 
 
 
