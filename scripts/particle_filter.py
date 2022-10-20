@@ -33,10 +33,20 @@ def get_yaw_from_pose(p):
     return yaw
 
 
-def draw_random_sample():
+def draw_random_sample(particle_cloud, num_particles):
     """ Draws a random sample of n elements from a given list of choices and their specified probabilities.
     We recommend that you fill in this function using random_sample.
     """
+
+    weights = []
+
+    for i in particle_cloud:
+        weights.append(i.w)
+
+    new_particle_array = random.choices(particle_cloud, weights, k = num_particles)
+    return new_particle_array
+    
+
    # TODO
     return
 
@@ -264,22 +274,26 @@ class ParticleFilter:
         totalx = 0
         totaly = 0
         totalangle = 0
-        # what is quaternion
+
+        # iterate through all the particles and get the totals for these values
         for p in self.particle_cloud:
             totalx += p.pose.Point.x
             totaly += p.pose.Point.y
-            totalangle += p.pose.Quaternion.z
-        totalx = totalx / self.num_particles
-        totaly = totaly / self.num_particles
-        totalangle = totalangle / self.num_particles
+            # the z value is the only one we care about
+            totalangle += get_yaw_from_pose(p.pose)
 
-        newPose = Pose()
-        # figure out what yaw is before proceeding
+        # get the averages
+        avgx = totalx / self.num_particles
+        avgy = totaly / self.num_particles
+        avgangle = totalangle / self.num_particles
 
-        self.robot_estimate = Pose()
-        # TODO
+        # make the new point and quaternion
+        avgPoint = Point(avgx, avgy, 0)
+        avgQuat = quaternion_from_euler(0, 0, avgangle)
 
-
+        #m make the new pose and update the estimate
+        newPose = Pose(avgPoint, avgQuat)
+        self.robot_estimate = newPose
     
     def update_particle_weights_with_measurement_model(self, data):
 
