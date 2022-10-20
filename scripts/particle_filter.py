@@ -169,140 +169,140 @@ class ParticleFilter:
 
 
 
-    def publish_estimated_robot_pose(self):
+    # def publish_estimated_robot_pose(self):
 
-        robot_pose_estimate_stamped = PoseStamped()
-        robot_pose_estimate_stamped.pose = self.robot_estimate
-        robot_pose_estimate_stamped.header = Header(stamp=rospy.Time.now(), frame_id=self.map_topic)
-        self.robot_estimate_pub.publish(robot_pose_estimate_stamped)
-
-
-
-    def resample_particles(self):
-        # initialize empty array for particle weights
-        weights = []
-
-        # fill array with weights of existing particles
-        for i in self.particle_cloud:
-            weights.append(i.w)
-
-        # regenerate particle array using weights of previous particles
-        new_particle_array = random.choices(self.particle_cloud, weights, k = self.num_particles)
-        return new_particle_array
+    #     robot_pose_estimate_stamped = PoseStamped()
+    #     robot_pose_estimate_stamped.pose = self.robot_estimate
+    #     robot_pose_estimate_stamped.header = Header(stamp=rospy.Time.now(), frame_id=self.map_topic)
+    #     self.robot_estimate_pub.publish(robot_pose_estimate_stamped)
 
 
 
-    def robot_scan_received(self, data):
+    # def resample_particles(self):
+    #     # initialize empty array for particle weights
+    #     weights = []
 
-        # wait until initialization is complete
-        if not(self.initialized):
-            return
+    #     # fill array with weights of existing particles
+    #     for i in self.particle_cloud:
+    #         weights.append(i.w)
 
-        # we need to be able to transfrom the laser frame to the base frame
-        if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
-            return
-
-        # wait for a little bit for the transform to become avaliable (in case the scan arrives
-        # a little bit before the odom to base_footprint transform was updated)
-        self.tf_listener.waitForTransform(self.base_frame, self.odom_frame, data.header.stamp, rospy.Duration(0.5))
-        if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
-            return
-
-        # calculate the pose of the laser distance sensor
-        p = PoseStamped(
-            header=Header(stamp=rospy.Time(0),
-                          frame_id=data.header.frame_id))
-
-        self.laser_pose = self.tf_listener.transformPose(self.base_frame, p)
-
-        # determine where the robot thinks it is based on its odometry
-        p = PoseStamped(
-            header=Header(stamp=data.header.stamp,
-                          frame_id=self.base_frame),
-            pose=Pose())
-
-        self.odom_pose = self.tf_listener.transformPose(self.odom_frame, p)
-
-        # we need to be able to compare the current odom pose to the prior odom pose
-        # if there isn't a prior odom pose, set the odom_pose variable to the current pose
-        if not self.odom_pose_last_motion_update:
-            self.odom_pose_last_motion_update = self.odom_pose
-            return
-
-
-        if self.particle_cloud:
-
-            # check to see if we've moved far enough to perform an update
-
-            curr_x = self.odom_pose.pose.position.x
-            old_x = self.odom_pose_last_motion_update.pose.position.x
-            curr_y = self.odom_pose.pose.position.y
-            old_y = self.odom_pose_last_motion_update.pose.position.y
-            curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
-            old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
-
-            if (np.abs(curr_x - old_x) > self.lin_mvmt_threshold or 
-                np.abs(curr_y - old_y) > self.lin_mvmt_threshold or
-                np.abs(curr_yaw - old_yaw) > self.ang_mvmt_threshold):
-
-                # This is where the main logic of the particle filter is carried out
-
-                self.update_particles_with_motion_model()
-
-                self.update_particle_weights_with_measurement_model(data)
-
-                self.normalize_particles()
-
-                self.resample_particles()
-
-                self.update_estimated_robot_pose()
-
-                self.publish_particle_cloud()
-                self.publish_estimated_robot_pose()
-
-                self.odom_pose_last_motion_update = self.odom_pose
+    #     # regenerate particle array using weights of previous particles
+    #     new_particle_array = random.choices(self.particle_cloud, weights, k = self.num_particles)
+    #     return new_particle_array
 
 
 
-    def update_estimated_robot_pose(self):
-        # based on the particles within the particle cloud, update the robot pose estimate
-        totalx = 0
-        totaly = 0
-        totalangle = 0
+    # def robot_scan_received(self, data):
 
-        # iterate through all the particles and get the totals for these values
-        for p in self.particle_cloud:
-            totalx += p.pose.Point.x
-            totaly += p.pose.Point.y
-            # the z value is the only one we care about
-            totalangle += get_yaw_from_pose(p.pose)
+    #     # wait until initialization is complete
+    #     if not(self.initialized):
+    #         return
 
-        # get the averages
-        avgx = totalx / self.num_particles
-        avgy = totaly / self.num_particles
-        avgangle = totalangle / self.num_particles
+    #     # we need to be able to transfrom the laser frame to the base frame
+    #     if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
+    #         return
 
-        # make the new point and quaternion
-        avgPoint = Point(avgx, avgy, 0)
-        avgQuat = quaternion_from_euler(0, 0, avgangle)
+    #     # wait for a little bit for the transform to become avaliable (in case the scan arrives
+    #     # a little bit before the odom to base_footprint transform was updated)
+    #     self.tf_listener.waitForTransform(self.base_frame, self.odom_frame, data.header.stamp, rospy.Duration(0.5))
+    #     if not(self.tf_listener.canTransform(self.base_frame, data.header.frame_id, data.header.stamp)):
+    #         return
 
-        #m make the new pose and update the estimate
-        newPose = Pose(avgPoint, avgQuat)
-        self.robot_estimate = newPose
+    #     # calculate the pose of the laser distance sensor
+    #     p = PoseStamped(
+    #         header=Header(stamp=rospy.Time(0),
+    #                       frame_id=data.header.frame_id))
 
-    def update_particle_weights_with_measurement_model(self, data):
+    #     self.laser_pose = self.tf_listener.transformPose(self.base_frame, p)
 
-        # TODO
+    #     # determine where the robot thinks it is based on its odometry
+    #     p = PoseStamped(
+    #         header=Header(stamp=data.header.stamp,
+    #                       frame_id=self.base_frame),
+    #         pose=Pose())
+
+    #     self.odom_pose = self.tf_listener.transformPose(self.odom_frame, p)
+
+    #     # we need to be able to compare the current odom pose to the prior odom pose
+    #     # if there isn't a prior odom pose, set the odom_pose variable to the current pose
+    #     if not self.odom_pose_last_motion_update:
+    #         self.odom_pose_last_motion_update = self.odom_pose
+    #         return
+
+
+    #     if self.particle_cloud:
+
+    #         # check to see if we've moved far enough to perform an update
+
+    #         curr_x = self.odom_pose.pose.position.x
+    #         old_x = self.odom_pose_last_motion_update.pose.position.x
+    #         curr_y = self.odom_pose.pose.position.y
+    #         old_y = self.odom_pose_last_motion_update.pose.position.y
+    #         curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
+    #         old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
+
+    #         if (np.abs(curr_x - old_x) > self.lin_mvmt_threshold or 
+    #             np.abs(curr_y - old_y) > self.lin_mvmt_threshold or
+    #             np.abs(curr_yaw - old_yaw) > self.ang_mvmt_threshold):
+
+    #             # This is where the main logic of the particle filter is carried out
+
+    #             self.update_particles_with_motion_model()
+
+    #             self.update_particle_weights_with_measurement_model(data)
+
+    #             self.normalize_particles()
+
+    #             self.resample_particles()
+
+    #             self.update_estimated_robot_pose()
+
+    #             self.publish_particle_cloud()
+    #             self.publish_estimated_robot_pose()
+
+    #             self.odom_pose_last_motion_update = self.odom_pose
+
+
+
+    # def update_estimated_robot_pose(self):
+    #     # based on the particles within the particle cloud, update the robot pose estimate
+    #     totalx = 0
+    #     totaly = 0
+    #     totalangle = 0
+
+    #     # iterate through all the particles and get the totals for these values
+    #     for p in self.particle_cloud:
+    #         totalx += p.pose.Point.x
+    #         totaly += p.pose.Point.y
+    #         # the z value is the only one we care about
+    #         totalangle += get_yaw_from_pose(p.pose)
+
+    #     # get the averages
+    #     avgx = totalx / self.num_particles
+    #     avgy = totaly / self.num_particles
+    #     avgangle = totalangle / self.num_particles
+
+    #     # make the new point and quaternion
+    #     avgPoint = Point(avgx, avgy, 0)
+    #     avgQuat = quaternion_from_euler(0, 0, avgangle)
+
+    #     #m make the new pose and update the estimate
+    #     newPose = Pose(avgPoint, avgQuat)
+    #     self.robot_estimate = newPose
+
+    # def update_particle_weights_with_measurement_model(self, data):
+    #     return
+    #     # TODO
 
 
         
 
-    def update_particles_with_motion_model(self):
+    # def update_particles_with_motion_model(self):
+    #     return
+    #     # based on the how the robot has moved (calculated from its odometry), we'll  move
+    #     # all of the particles correspondingly
 
-        # based on the how the robot has moved (calculated from its odometry), we'll  move
-        # all of the particles correspondingly
-
-        # TODO
+    #     # TODO
 
         
 
