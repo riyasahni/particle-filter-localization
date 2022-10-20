@@ -125,13 +125,13 @@ class ParticleFilter:
     def initialize_particle_cloud(self):
 
         for i in range (0, self.num_particles): # initialize random x,y starting position of particle
-            randx = random.uniform(self.map.origin.position.x - (self.map.width)/2, self.map.origin.position.x + (self.map.width)/2)
-            randy = random.uniform(self.map.origin.position.y - (self.map.height)/2, self.map.origin.position.y + (self.map.height)/2)
+            randx = uniform(self.map.origin.position.x - (self.map.width)/2, self.map.origin.position.x + (self.map.width)/2)
+            randy = uniform(self.map.origin.position.y - (self.map.height)/2, self.map.origin.position.y + (self.map.height)/2)
             z = 0
 
             randPoint = Point(randx, randy, z)
             # select random particle direction for particle
-            randDirEuler =random.uniform(0, 2*np.py)
+            randDirEuler = uniform(0, 2*np.py)
             # conver euler to quaternion
             randDir = quaternion_from_euler(0,0,randDirEuler)
             # create random pose with random position and random direction
