@@ -152,7 +152,7 @@ class ParticleFilter:
         for p in self.particle_cloud:
             totalweight += p.w
         for p in self.particle_cloud:
-            p = p/totalweight
+            p.w = p/totalweight
 
 
     def publish_particle_cloud(self):
