@@ -125,10 +125,10 @@ class ParticleFilter:
     def initialize_particle_cloud(self):
 
         for i in range (0, self.num_particles+1): # initialize random x,y starting position of particle
-            # randx = uniform(self.map.info.origin.position.x - (self.map.info.width)/2, self.map.info.origin.position.x + (self.map.info.width)/2)
-            # randy = uniform(self.map.info.origin.position.y - (self.map.info.height)/2, self.map.info.origin.position.y + (self.map.info.height)/2)
-            randx = uniform(self.map.info.origin.position.x - 384/2, self.map.info.origin.position.x + 384/2)
-            randy = uniform(self.map.info.origin.position.y - 384/2, self.map.info.origin.position.y + 384/2)
+            randx = uniform(self.map.info.origin.position.x - (self.map.info.width)/2, self.map.info.origin.position.x + (self.map.info.width)/2)
+            randy = uniform(self.map.info.origin.position.y - (self.map.info.height)/2, self.map.info.origin.position.y + (self.map.info.height)/2)
+            # randx = uniform(self.map.info.origin.position.x - 384/2, self.map.info.origin.position.x + 384/2)
+            # randy = uniform(self.map.info.origin.position.y - 384/2, self.map.info.origin.position.y + 384/2)
             z = 0
 
             randPoint = Point(randx, randy, z)
