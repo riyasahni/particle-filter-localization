@@ -169,26 +169,26 @@ class ParticleFilter:
 
 
 
-    # def publish_estimated_robot_pose(self):
+    def publish_estimated_robot_pose(self):
 
-    #     robot_pose_estimate_stamped = PoseStamped()
-    #     robot_pose_estimate_stamped.pose = self.robot_estimate
-    #     robot_pose_estimate_stamped.header = Header(stamp=rospy.Time.now(), frame_id=self.map_topic)
-    #     self.robot_estimate_pub.publish(robot_pose_estimate_stamped)
+        robot_pose_estimate_stamped = PoseStamped()
+        robot_pose_estimate_stamped.pose = self.robot_estimate
+        robot_pose_estimate_stamped.header = Header(stamp=rospy.Time.now(), frame_id=self.map_topic)
+        self.robot_estimate_pub.publish(robot_pose_estimate_stamped)
 
 
 
-    # def resample_particles(self):
-    #     # initialize empty array for particle weights
-    #     weights = []
+    def resample_particles(self):
+        # initialize empty array for particle weights
+        weights = []
 
-    #     # fill array with weights of existing particles
-    #     for i in self.particle_cloud:
-    #         weights.append(i.w)
+        # fill array with weights of existing particles
+        for i in self.particle_cloud:
+            weights.append(i.w)
 
-    #     # regenerate particle array using weights of previous particles
-    #     new_particle_array = random.choices(self.particle_cloud, weights, k = self.num_particles)
-    #     return new_particle_array
+        # regenerate particle array using weights of previous particles
+        new_particle_array = random.choices(self.particle_cloud, weights, k = self.num_particles)
+        return new_particle_array
 
 
 
