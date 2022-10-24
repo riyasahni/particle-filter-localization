@@ -105,10 +105,11 @@ class ParticleFilter:
         # subscribe to the lidar scan from the robot
         rospy.Subscriber(self.scan_topic, LaserScan, self.robot_scan_received)
 
+        rospy.sleep(0.5)
+
         # enable listening for and broadcasting corodinate transforms
         self.tf_listener = TransformListener()
         self.tf_broadcaster = TransformBroadcaster()
-
 
         # intialize the particle cloud
         self.initialize_particle_cloud()
@@ -124,23 +125,26 @@ class ParticleFilter:
 
     def initialize_particle_cloud(self):
 
-        for i in range (0, self.num_particles+1): # initialize random x,y starting position of particle
-            randx = uniform(self.map.info.origin.position.x - (self.map.info.width)/2, self.map.info.origin.position.x + (self.map.info.width)/2)
-            randy = uniform(self.map.info.origin.position.y - (self.map.info.height)/2, self.map.info.origin.position.y + (self.map.info.height)/2)
-            # randx = uniform(self.map.info.origin.position.x - 384/2, self.map.info.origin.position.x + 384/2)
-            # randy = uniform(self.map.info.origin.position.y - 384/2, self.map.info.origin.position.y + 384/2)
+        print("info: ", self.map.info)
+
+        for i in range (0, self.num_particles): # initialize random x,y starting position of particle
+            #randx = uniform(self.map.info.origin.position.x - (self.map.info.width)/2, self.map.info.origin.position.x + (self.map.info.width)/2)
+            #randy = uniform(self.map.info.origin.position.y - (self.map.info.height)/2, self.map.info.origin.position.y + (self.map.info.height)/2)
+            #randx = uniform(self.map.info.origin.position.x + 384/2, self.map.info.origin.position.x + 384/2)
+            #randy = uniform(self.map.info.origin.position.y + 384/2, self.map.info.origin.position.y + 384/2)
+            randy = 1.15
+            randx = 0.9
+            print("origin: ", self.map.info.origin.position)
+
             z = 0
 
-            randPoint = Point(randx, randy, z)
-            # print("randX: ", randx)
-            # print("randY: ", randy)
-            print("map width: ", self.map.info.width)
-            print("map origin: ", self.map.info.origin.position.x)
-            print("width of particle_cloud: ", self.particle_cloud)
+            randPoint = Point(randy, randx, z)
             # select random particle direction for particle
             randDirEuler = uniform(0, 2*np.pi)
             # conver euler to quaternion
-            randDir = quaternion_from_euler(0,0,randDirEuler)
+            convertedValues = quaternion_from_euler(0.0, 0.0, randDirEuler)
+            randDir = Quaternion(convertedValues[0], convertedValues[1], convertedValues[2], convertedValues[3])
+
             # create random pose with random position and random direction
             randPose = Pose(randPoint, randDir)
             # create new random particle with average weight
