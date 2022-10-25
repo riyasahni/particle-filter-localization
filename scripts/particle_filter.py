@@ -76,7 +76,7 @@ class ParticleFilter:
         self.map = OccupancyGrid()
 
         # the number of particles used in the particle filter
-        self.num_particles = 5
+        self.num_particles = 1000
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -125,35 +125,38 @@ class ParticleFilter:
 
     def initialize_particle_cloud(self):
 
-        print("info: ", self.map.info)
-
-        for i in range (0, self.num_particles): # initialize random x,y starting position of particle
-            #randx = uniform(self.map.info.origin.position.x - (self.map.info.width)/2, self.map.info.origin.position.x + (self.map.info.width)/2)
-            #randy = uniform(self.map.info.origin.position.y - (self.map.info.height)/2, self.map.info.origin.position.y + (self.map.info.height)/2)
-            #randx = uniform(self.map.info.origin.position.x + 384/2, self.map.info.origin.position.x + 384/2)
-            #randy = uniform(self.map.info.origin.position.y + 384/2, self.map.info.origin.position.y + 384/2)
-            randy = 1.15
-            randx = 0.9
-            print("origin: ", self.map.info.origin.position)
+        counter = 0
+        # create counter to generate self.num_particles # of particles
+        while counter < self.num_particles:
+            while True:
+                # keep regenerating random coordinates for new particle until the random coordinates land on a valid, available spot
+                randx = uniform(self.map.info.origin.position.x, self.map.info.origin.position.x+self.map.info.width*self.map.info.resolution)
+                randy = uniform(self.map.info.origin.position.y, self.map.info.origin.position.y+self.map.info.height*self.map.info.resolution)
+                # convert coordinates to pixel units
+                pixelrandx = (randx - self.map.info.origin.position.x)  / self.map.info.resolution
+                pixelrandy = (randy - self.map.info.origin.position.y) / self.map.info.resolution
+                # stop regenerating random coordinates for new particle once coordinates his a valid spot
+                if self.map.data[int(pixelrandx) * self.map.info.width + int(pixelrandy)] == 0:
+                    break
 
             z = 0
-
+            # construct new point with random coordinates
             randPoint = Point(randy, randx, z)
             # select random particle direction for particle
             randDirEuler = uniform(0, 2*np.pi)
             # conver euler to quaternion
             convertedValues = quaternion_from_euler(0.0, 0.0, randDirEuler)
             randDir = Quaternion(convertedValues[0], convertedValues[1], convertedValues[2], convertedValues[3])
-
             # create random pose with random position and random direction
             randPose = Pose(randPoint, randDir)
             # create new random particle with average weight
             sampleParticle = Particle(randPose, 1/self.num_particles)
             self.particle_cloud.append(sampleParticle)
+            # increase counter to generate another particle
+            counter +=1
 
-
+        # normalize nad publish particle cloud
         self.normalize_particles()
-
         self.publish_particle_cloud()
 
 
@@ -200,7 +203,6 @@ class ParticleFilter:
         # regenerate particle array using weights of previous particles
         new_particle_array = random.choices(self.particle_cloud, weights, k = self.num_particles)
         return new_particle_array
-
 
 
     def robot_scan_received(self, data):
@@ -252,7 +254,7 @@ class ParticleFilter:
             curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
             old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
 
-            if (np.abs(curr_x - old_x) > self.lin_mvmt_threshold or 
+            if (np.abs(curr_x - old_x) > self.lin_mvmt_threshold or
                 np.abs(curr_y - old_y) > self.lin_mvmt_threshold or
                 np.abs(curr_yaw - old_yaw) > self.ang_mvmt_threshold):
 
