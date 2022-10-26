@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 
 import rospy
@@ -77,7 +76,7 @@ class ParticleFilter:
         self.map = OccupancyGrid()
 
         # the number of particles used in the particle filter
-        self.num_particles = 1000
+        self.num_particles = 5
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -106,12 +105,12 @@ class ParticleFilter:
         # subscribe to the lidar scan from the robot
         rospy.Subscriber(self.scan_topic, LaserScan, self.robot_scan_received)
 
-        rospy.sleep(0.5)
-
         # enable listening for and broadcasting corodinate transforms
         self.tf_listener = TransformListener()
         self.tf_broadcaster = TransformBroadcaster()
 
+
+        rospy.sleep(1)
         # intialize the particle cloud
         self.initialize_particle_cloud()
 
@@ -192,6 +191,7 @@ class ParticleFilter:
 
 
     def resample_particles(self):
+        # return
         # initialize empty array for particle weights
         weights = []
 
@@ -200,7 +200,7 @@ class ParticleFilter:
             weights.append(i.w)
 
         # regenerate particle array using weights of previous particles
-        new_particle_array = random.choices(self.particle_cloud, weights, k = self.num_particles)
+        new_particle_array = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
         return new_particle_array
 
 
@@ -284,8 +284,8 @@ class ParticleFilter:
 
         # iterate through all the particles and get the totals for these values
         for p in self.particle_cloud:
-            totalx += p.pose.Point.x
-            totaly += p.pose.Point.y
+            totalx += p.pose.position.x
+            totaly += p.pose.position.y
             # the z value is the only one we care about
             totalangle += get_yaw_from_pose(p.pose)
 
@@ -296,7 +296,8 @@ class ParticleFilter:
 
         # make the new point and quaternion
         avgPoint = Point(avgx, avgy, 0)
-        avgQuat = quaternion_from_euler(0, 0, avgangle)
+        avgArray = quaternion_from_euler(0, 0, avgangle)
+        avgQuat = Quaternion(avgArray[0], avgArray[1], avgArray[2], avgArray[3])
 
         #m make the new pose and update the estimate
         newPose = Pose(avgPoint, avgQuat)
@@ -318,27 +319,42 @@ class ParticleFilter:
         #return
         # based on the how the robot has moved (calculated from its odometry), we'll  move
         # all of the particles correspondingly
-        delta_x = curr_x - old_x
-        delta_y = curr_y - old_y
+
+        curr_x = self.odom_pose.pose.position.x
+        old_x = self.odom_pose_last_motion_update.pose.position.x
+        curr_y = self.odom_pose.pose.position.y
+        old_y = self.odom_pose_last_motion_update.pose.position.y
+        curr_yaw = get_yaw_from_pose(self.odom_pose.pose)
+        old_yaw = get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
+        # caluclate robots "up" and "sideways" changes based on its 'x' and 'y' movements
+        delta_up = curr_x - old_x
+        delta_sideways = curr_y - old_y
+
+        # check if robot is traveling backwards, flag_dir = -1
+        flag_dir = -1
+        if delta_up < 0:
+            flag_dir = 1
+        # calculate distance robot travels (hypotenuse)
+        rob_hypot = math.sqrt(delta_up**2 + delta_sideways**2)
+        # calculate robot's change in yaw
         delta_yaw = curr_yaw - old_yaw
+
         for p in self.particle_cloud:
-            # for the partcle p to mimic a y-axis movement from the robot:
+            # for the partcle p to mimic a "sideways" movement from the robot:
             p_yaw = get_yaw_from_pose(p.pose)
-            vert_dir_p_mov_robotY = delta_y*cos(p_yaw)
-            horiz_dir_p_mov_robotY = delta_y*sin(p_yaw)
-            # for the particle p to mimix an x-axis movement from the robot:
-            vert_dir_p_mov_robotX = -delta_x*sin(p_yaw)
-            horiz_dir_p_mov_robotX = delta_x*cos(p_yaw)
-            # now find out tot. vert. & tot. horiz. distances particle needs to move:
-            p_tot_vert_movement = vert_dir_p_mov_robotY + vert_dir_p_mov_robotX
-            p_tot_horiz_movement = horiz_dir_p_mov_robotY+horiz_dir_p_mov_robotX
+            # for the particle p to mimix an "up"  movement from the robot:
+            p_side = rob_hypot*math.sin(p_yaw + delta_yaw)
+            p_up = rob_hypot*math.cos(p_yaw + delta_yaw)
             # update particle direction from robot's updated yaw
             p_new_yaw = p_yaw + delta_yaw
             p_new_yaw_quat = quaternion_from_euler(0.0, 0.0, p_new_yaw)
             p_new_dir = Quaternion(p_new_yaw_quat[0], p_new_yaw_quat[1], p_new_yaw_quat[2], p_new_yaw_quat[3])
             # set new particle pos. and yaw based off robot's movements:
-            p.pose.position.y = p.pose.position.y + p_tot_vert_movement
-            p.pose.position.x = p.pose.position.x + p_tot_horiz_movement
+            # the 'x' direction is UP
+            p.pose.position.x = p.pose.position.x + p_up*flag_dir
+            # the 'y' direction is SIDEWAYS
+            p.pose.position.y = p.pose.position.y + p_side*flag_dir
+            # particle's new yaw
             p.pose.orientation = p_new_dir
 
 if __name__=="__main__":
