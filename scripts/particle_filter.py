@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 
 import rospy
@@ -309,15 +310,31 @@ class ParticleFilter:
 
 
     def update_particles_with_motion_model(self):
-        return
+        #return
         # based on the how the robot has moved (calculated from its odometry), we'll  move
         # all of the particles correspondingly
-
-        # TODO
-
-
-
-
+        delta_x = curr_x - old_x
+        delta_y = curr_y - old_y
+        delta_yaw = curr_yaw - old_yaw
+        for p in self.particle_cloud:
+            # for the partcle p to mimic a y-axis movement from the robot:
+            p_yaw = get_yaw_from_pose(p.pose)
+            vert_dir_p_mov_robotY = delta_y*cos(p_yaw)
+            horiz_dir_p_mov_robotY = delta_y*sin(p_yaw)
+            # for the particle p to mimix an x-axis movement from the robot:
+            vert_dir_p_mov_robotX = -delta_x*sin(p_yaw)
+            horiz_dir_p_mov_robotX = delta_x*cos(p_yaw)
+            # now find out tot. vert. & tot. horiz. distances particle needs to move:
+            p_tot_vert_movement = vert_dir_p_mov_robotY + vert_dir_p_mov_robotX
+            p_tot_horiz_movement = horiz_dir_p_mov_robotY+horiz_dir_p_mov_robotX
+            # update particle direction from robot's updated yaw
+            p_new_yaw = p_yaw + delta_yaw
+            p_new_yaw_quat = quaternion_from_euler(0.0, 0.0, p_new_yaw)
+            p_new_dir = Quaternion(p_new_yaw_quat[0], p_new_yaw_quat[1], p_new_yaw_quat[2], p_new_yaw_quat[3])
+            # set new particle pos. and yaw based off robot's movements:
+            p.pose.position.y = p.pose.position.y + p_tot_vert_movement
+            p.pose.position.x = p.pose.position.x + p_tot_horiz_movement
+            p.pose.orientation = p_new_dir
 
 if __name__=="__main__":
 
