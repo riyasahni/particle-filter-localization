@@ -182,8 +182,6 @@ class ParticleFilter:
         self.particles_pub.publish(particle_cloud_pose_array)
 
 
-
-
     def publish_estimated_robot_pose(self):
 
         robot_pose_estimate_stamped = PoseStamped()
@@ -306,7 +304,14 @@ class ParticleFilter:
 
     def update_particle_weights_with_measurement_model(self, data):
         return
-        # TODO
+        # Monte Carlo Localization (MCL) ALgorithm
+        # first compute what the sensor measurements of the robot would be if
+        # it were in the position of the particle
+        #   i.e. p_senser_msmts= [0.5, 0.7, 0.2]
+        #   and assume robot_senser_msmts = [9, 8, 7]
+        # next, compute the weights for each particle for t = 1
+        #   new_p_weight = 1/(abs(9-0.5)+abs(8-0.7)+abs(7-0.2))
+        # repeat for t = 2, 3, ... as robot keeps moving and particle motion is updated
 
 
     def update_particles_with_motion_model(self):
