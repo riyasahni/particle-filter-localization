@@ -299,15 +299,44 @@ class ParticleFilter:
         avgArray = quaternion_from_euler(0, 0, avgangle)
         avgQuat = Quaternion(avgArray[0], avgArray[1], avgArray[2], avgArray[3])
 
-        #m make the new pose and update the estimate
+        # make the new pose and update the estimate
         newPose = Pose(avgPoint, avgQuat)
         self.robot_estimate = newPose
 
     def update_particle_weights_with_measurement_model(self, data):
         return
         # Monte Carlo Localization (MCL) ALgorithm
+        lidar_angles = [45, 90, 135, 180, 225, 270, 315, 360]
+        robot_sensor_distances = []
+        index = 0
+        # collect robot's sensor measurements for given angles:
+         for angle in lidar_angles:
+            robot_sensor_distances[index] = data.ranges[angle]
+        # likelihood field for range finders algo
+        # loop through each particle
+        for p in self.particle_cloud:
+            q = 1
+            # loop through each laser range finder measurement recieved by robot
+            for k in robot_sensor_distances:
+                index = 0
+                if k != 'nan': # check if robot sensor measures a valid object
+                    p_projected_x = p.pose.position.x + k*math.cos(p.pose.orientation + lidar_angles[index])
+                    p_projected_y = p.pose.position.y + k*math.sin(p.pose.orientation + lidar_angles[index])
+                    # built-in func from likelihood_field.py
+                    dist = get_closest_obstacle_distance(p_projected_x, p_projected_y)
+                    q = q*compute_prob_zero_centered_gaussian(dist, 0.1)
+            p.w = q
+            index +=1
+
+        ###########################################################################################
+        #get_closest_obstacle_distance(x,y) in likelihood_field.py
+            # returns 'nan' if robot senses something super far away (outside sensor range)
+            # in this case, the
+        #compute_prob_zero_centered_gaussian(dist, sd)
+
         # first compute what the sensor measurements of the robot would be if
         # it were in the position of the particle
+
         #   i.e. p_senser_msmts= [0.5, 0.7, 0.2]
         #   and assume robot_senser_msmts = [9, 8, 7]
         # next, compute the weights for each particle for t = 1
