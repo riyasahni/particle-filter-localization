@@ -172,7 +172,9 @@ class ParticleFilter:
         totalweight = 0
         for p in self.particle_cloud:
             totalweight += p.w
+        print("totalweight: ", totalweight)
         for p in self.particle_cloud:
+            #print("p: ", p.w)
             p.w = p.w/totalweight
 
 
@@ -321,29 +323,32 @@ class ParticleFilter:
             robot_sensor_distances.append(data.ranges[angle - 1])
         # likelihood field for range finders algo
         # loop through each particle
+        
         for p in self.particle_cloud:
             q = 1
             index = 0
             # loop through each laser range finder measurement recieved by robot
             for k in robot_sensor_distances:
                 #index = 0
-                if k != 'nan': # check if robot sensor measures a valid object
+                #print(k)
+                if math.isnan(k) == False: # check if robot sensor measures a valid object
                     p_projected_x = p.pose.position.x + k*math.cos(get_yaw_from_pose(p.pose) + lidar_angles[index])
                     p_projected_y = p.pose.position.y + k*math.sin(get_yaw_from_pose(p.pose) + lidar_angles[index])
                     # built-in func from likelihood_field.py
                     dist = self.likelihood.get_closest_obstacle_distance(p_projected_x, p_projected_y)
-                    print("dist: ", dist)
-                    print("compute: ", compute_prob_zero_centered_gaussian(dist, 0.1))
-                    print("q before: ", q)
+                    if math.isnan(dist) == True:
+                        #q = 0
+                        #break
+                        #print("HEREHEREHEHREHRHERHERHERHREHHRERHERHERHERHERHEHERHEREHRHER")
+                        continue
+                    #print("dist: ", dist)
                     q = q*compute_prob_zero_centered_gaussian(dist, 0.1)
-                    print("q now: ", q)
                 index += 1
-            if q == 'nan':
-                print("is this helping?")
-                q = 0.0
+            #if q == 'nan':
+            #    print("is this helping?")
+            #    q = 0.0
             p.w = q
-            print("q: ", q)
-            #index +=1
+            #print("q: ", q)
 
         ###########################################################################################
         #get_closest_obstacle_distance(x,y) in likelihood_field.py
