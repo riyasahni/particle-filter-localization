@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
+import copy
 
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Quaternion, Point, Pose, PoseArray, PoseStamped
@@ -19,7 +20,6 @@ import math
 from random import randint, random, uniform
 
 from likelihood_field import *
-
 
 def get_yaw_from_pose(p):
     """ A helper function that takes in a Pose object (geometry_msgs) and returns yaw"""
@@ -84,7 +84,7 @@ class ParticleFilter:
         self.map = OccupancyGrid()
 
         # the number of particles used in the particle filter
-        self.num_particles = 1000
+        self.num_particles = 10
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -169,14 +169,23 @@ class ParticleFilter:
 
     def normalize_particles(self):
         # make all the particle weights sum to 1.0
+        # create a deep copy of the particle cloud to normalize
+        dc = copy.deepcopy(self.particle_cloud)
         totalweight = 0
+        tot_norm_weight = 0
         for p in self.particle_cloud:
             totalweight += p.w
         print("totalweight: ", totalweight)
+        index = 0
         for p in self.particle_cloud:
             #print("p: ", p.w)
             p.w = p.w/totalweight
-
+            dc[index] = p
+            index += 1
+            tot_norm_weight += p.w
+        self.particle_cloud = dc
+        # print("particle weight arr: ", dc)
+        print("tot_norm_weight: ", tot_norm_weight)
 
     def publish_particle_cloud(self):
 
@@ -209,9 +218,11 @@ class ParticleFilter:
             weights.append(i.w)
 
         # regenerate particle array using weights of previous particles
+        # print("particle_weights: ", weights)
         new_particle_array = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
-        return new_particle_array
-
+        new_p_arr_deepcopy = copy.deepcopy(new_particle_array)
+        self.particle_cloud = new_p_arr_deepcopy
+        # deep copy of new_part_arr
 
     def robot_scan_received(self, data):
 
@@ -323,7 +334,7 @@ class ParticleFilter:
             robot_sensor_distances.append(data.ranges[angle - 1])
         # likelihood field for range finders algo
         # loop through each particle
-        
+
         for p in self.particle_cloud:
             q = 1
             index = 0
@@ -337,16 +348,18 @@ class ParticleFilter:
                     # built-in func from likelihood_field.py
                     dist = self.likelihood.get_closest_obstacle_distance(p_projected_x, p_projected_y)
                     if math.isnan(dist) == True:
-                        #q = 0
-                        #break
+                        dist  = 0
                         #print("HEREHEREHEHREHRHERHERHERHREHHRERHERHERHERHERHEHERHEREHRHER")
-                        continue
                     #print("dist: ", dist)
                     q = q*compute_prob_zero_centered_gaussian(dist, 0.1)
+                    print("dist: ", dist)
+                    print("gaussian prob: ", compute_prob_zero_centered_gaussian(dist, 0.1))
+                    print("particle_weight1: ", q)
                 index += 1
             #if q == 'nan':
             #    print("is this helping?")
             #    q = 0.0
+            print("particle_weight2: ", q)
             p.w = q
             #print("q: ", q)
 
