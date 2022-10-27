@@ -18,6 +18,7 @@ import math
 
 from random import randint, random, uniform
 
+from likelihood_field import *
 
 
 def get_yaw_from_pose(p):
@@ -31,6 +32,13 @@ def get_yaw_from_pose(p):
             [2])
 
     return yaw
+
+def compute_prob_zero_centered_gaussian(dist, sd):
+    """ Takes in distance from zero (dist) and standard deviation (sd) for gaussian
+        and returns probability (likelihood) of observation """
+    c = 1.0 / (sd * math.sqrt(2 * math.pi))
+    prob = c * math.exp((-math.pow(dist,2))/(2 * math.pow(sd, 2)))
+    return prob
 
 
 #def draw_random_sample(particle_cloud, num_particles):
@@ -76,7 +84,7 @@ class ParticleFilter:
         self.map = OccupancyGrid()
 
         # the number of particles used in the particle filter
-        self.num_particles = 5
+        self.num_particles = 1000
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -108,9 +116,8 @@ class ParticleFilter:
         # enable listening for and broadcasting corodinate transforms
         self.tf_listener = TransformListener()
         self.tf_broadcaster = TransformBroadcaster()
-
-
-        rospy.sleep(1)
+        self.likelihood = LikelihoodField()
+        rospy.sleep(5)
         # intialize the particle cloud
         self.initialize_particle_cloud()
 
@@ -304,29 +311,39 @@ class ParticleFilter:
         self.robot_estimate = newPose
 
     def update_particle_weights_with_measurement_model(self, data):
-        return
+        #return
         # Monte Carlo Localization (MCL) ALgorithm
         lidar_angles = [45, 90, 135, 180, 225, 270, 315, 360]
         robot_sensor_distances = []
-        index = 0
+        #index = 0
         # collect robot's sensor measurements for given angles:
-         for angle in lidar_angles:
-            robot_sensor_distances[index] = data.ranges[angle]
+        for angle in lidar_angles:
+            robot_sensor_distances.append(data.ranges[angle - 1])
         # likelihood field for range finders algo
         # loop through each particle
         for p in self.particle_cloud:
             q = 1
+            index = 0
             # loop through each laser range finder measurement recieved by robot
             for k in robot_sensor_distances:
-                index = 0
+                #index = 0
                 if k != 'nan': # check if robot sensor measures a valid object
-                    p_projected_x = p.pose.position.x + k*math.cos(p.pose.orientation + lidar_angles[index])
-                    p_projected_y = p.pose.position.y + k*math.sin(p.pose.orientation + lidar_angles[index])
+                    p_projected_x = p.pose.position.x + k*math.cos(get_yaw_from_pose(p.pose) + lidar_angles[index])
+                    p_projected_y = p.pose.position.y + k*math.sin(get_yaw_from_pose(p.pose) + lidar_angles[index])
                     # built-in func from likelihood_field.py
-                    dist = get_closest_obstacle_distance(p_projected_x, p_projected_y)
+                    dist = self.likelihood.get_closest_obstacle_distance(p_projected_x, p_projected_y)
+                    print("dist: ", dist)
+                    print("compute: ", compute_prob_zero_centered_gaussian(dist, 0.1))
+                    print("q before: ", q)
                     q = q*compute_prob_zero_centered_gaussian(dist, 0.1)
+                    print("q now: ", q)
+                index += 1
+            if q == 'nan':
+                print("is this helping?")
+                q = 0.0
             p.w = q
-            index +=1
+            print("q: ", q)
+            #index +=1
 
         ###########################################################################################
         #get_closest_obstacle_distance(x,y) in likelihood_field.py
@@ -360,9 +377,9 @@ class ParticleFilter:
         delta_sideways = curr_y - old_y
 
         # check if robot is traveling backwards, flag_dir = -1
-        flag_dir = -1
+        flag_dir = 1
         if delta_up < 0:
-            flag_dir = 1
+            flag_dir = -1
         # calculate distance robot travels (hypotenuse)
         rob_hypot = math.sqrt(delta_up**2 + delta_sideways**2)
         # calculate robot's change in yaw
