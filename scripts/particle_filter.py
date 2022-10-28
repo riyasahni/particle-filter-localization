@@ -84,7 +84,7 @@ class ParticleFilter:
         self.map = OccupancyGrid()
 
         # the number of particles used in the particle filter
-        self.num_particles = 10
+        self.num_particles = 1000
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -170,20 +170,20 @@ class ParticleFilter:
     def normalize_particles(self):
         # make all the particle weights sum to 1.0
         # create a deep copy of the particle cloud to normalize
-        dc = copy.deepcopy(self.particle_cloud)
+        #dc = copy.deepcopy(self.particle_cloud)
         totalweight = 0
         tot_norm_weight = 0
         for p in self.particle_cloud:
             totalweight += p.w
         print("totalweight: ", totalweight)
-        index = 0
+        # index = 0
         for p in self.particle_cloud:
             #print("p: ", p.w)
             p.w = p.w/totalweight
-            dc[index] = p
-            index += 1
+          #  dc[index] = p
+          #  index += 1
             tot_norm_weight += p.w
-        self.particle_cloud = dc
+        #self.particle_cloud = dc
         # print("particle weight arr: ", dc)
         print("tot_norm_weight: ", tot_norm_weight)
 
@@ -219,9 +219,18 @@ class ParticleFilter:
 
         # regenerate particle array using weights of previous particles
         # print("particle_weights: ", weights)
-        new_particle_array = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
-        new_p_arr_deepcopy = copy.deepcopy(new_particle_array)
-        self.particle_cloud = new_p_arr_deepcopy
+
+        # new_particle_array = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
+
+        self.particle_cloud = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
+
+         #new_p_arr_deepcopy = copy.deepcopy(new_particle_array)
+#        index = 0
+#        for p in new_particle_array:
+#            newp = p
+#            self.particle_cloud[index] = newp
+#            index += 1
+       #  self.particle_cloud = new_particle_array
         # deep copy of new_part_arr
 
     def robot_scan_received(self, data):
@@ -262,7 +271,7 @@ class ParticleFilter:
             return
 
 
-        if self.particle_cloud:
+        if len(self.particle_cloud)>0:
 
             # check to see if we've moved far enough to perform an update
 
@@ -326,7 +335,7 @@ class ParticleFilter:
     def update_particle_weights_with_measurement_model(self, data):
         #return
         # Monte Carlo Localization (MCL) ALgorithm
-        lidar_angles = [45, 90, 135, 180, 225, 270, 315, 360]
+        lidar_angles = [90, 180, 270, 0]
         robot_sensor_distances = []
         #index = 0
         # collect robot's sensor measurements for given angles:
@@ -334,32 +343,48 @@ class ParticleFilter:
             robot_sensor_distances.append(data.ranges[angle - 1])
         # likelihood field for range finders algo
         # loop through each particle
-
+        max_dist = max(robot_sensor_distances)
         for p in self.particle_cloud:
             q = 1
             index = 0
             # loop through each laser range finder measurement recieved by robot
             for k in robot_sensor_distances:
+                print("k, dist: ", k)
                 #index = 0
                 #print(k)
-                if math.isnan(k) == False: # check if robot sensor measures a valid object
-                    p_projected_x = p.pose.position.x + k*math.cos(get_yaw_from_pose(p.pose) + lidar_angles[index])
-                    p_projected_y = p.pose.position.y + k*math.sin(get_yaw_from_pose(p.pose) + lidar_angles[index])
-                    # built-in func from likelihood_field.py
-                    dist = self.likelihood.get_closest_obstacle_distance(p_projected_x, p_projected_y)
-                    if math.isnan(dist) == True:
-                        dist  = 0
+#                if math.isnan(k) == False: # check if robot sensor measures a valid object
+#                    p_projected_x = p.pose.position.x + k*math.cos(get_yaw_from_pose(p.pose) + lidar_angles[index])
+#                    p_projected_y = p.pose.position.y + k*math.sin(get_yaw_from_pose(p.pose) + lidar_angles[index])
+#                    # built-in func from likelihood_field.py
+#                    dist = self.likelihood.get_closest_obstacle_distance(p_projected_x, p_projected_y)
+#                    if math.isnan(dist) == True:
+#                        dist  = 0
+#                        #print("HEREHEREHEHREHRHERHERHERHREHHRERHERHERHERHERHEHERHEREHRHER")
+#                    #print("dist: ", dist)
+#                    q = q*compute_prob_zero_centered_gaussian(dist, 0.1)
+#                    print("dist: ", dist)
+#                    print("gaussian prob: ", compute_prob_zero_centered_gaussian(dist, 0.1))
+#                    print("particle_weight1: ", q)
+                p_projected_x = p.pose.position.x + k*math.cos(get_yaw_from_pose(p.pose) + lidar_angles[index])
+                p_projected_y = p.pose.position.y + k*math.sin(get_yaw_from_pose(p.pose) + lidar_angles[index])
+                # print("p_projected_x: ", p_projected_x)
+                # print("p_projected_y: ", p_projected_y)
+                # built-in func from likelihood_field.py
+                dist = self.likelihood.get_closest_obstacle_distance(p_projected_x, p_projected_y)
+                if math.isnan(dist) == True:
+                    dist  = max_dist # dist = max distance
                         #print("HEREHEREHEHREHRHERHERHERHREHHRERHERHERHERHERHEHERHEREHRHER")
                     #print("dist: ", dist)
-                    q = q*compute_prob_zero_centered_gaussian(dist, 0.1)
-                    print("dist: ", dist)
-                    print("gaussian prob: ", compute_prob_zero_centered_gaussian(dist, 0.1))
-                    print("particle_weight1: ", q)
+                q = q*compute_prob_zero_centered_gaussian(dist, 0.1)
+                # print("q: ", q)
+                # print("dist: ", dist)
+                # print("gaussian prob: ", compute_prob_zero_centered_gaussian(dist, 0.1))
+                # print("particle_weight1: ", q)
                 index += 1
             #if q == 'nan':
             #    print("is this helping?")
             #    q = 0.0
-            print("particle_weight2: ", q)
+            print("particle_weight: ", q)
             p.w = q
             #print("q: ", q)
 
