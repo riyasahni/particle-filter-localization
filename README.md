@@ -27,6 +27,7 @@ To solve this problem, we had to randomly place particles on the map, making sur
 
 ## Main Steps
 Particle filter localization steps:
+
 1) Initialization of particle cloud
 
 Code location: We did the initialization of the particle cloud in the initialize_particle_cloud function on line 136. 
@@ -75,4 +76,8 @@ We faced a lot of challenges in trying to complete this project. Understanding h
 
 ## Future Work
 
-If we had more time, it would be interesting to keep playing with the noise, to try to see what could change with that. We didn't get enough time to observe what more extreme values would lead to, and that would have been very interesting. It would also be interesting to see if we could get more particles on the field without having too much computation, so figuring out a way to optimize our code more.
+It would be interesting to see if we could get 10,000 particles on the field without exhausting our machine's compute power, since the only solution we were able to come up with to resolve the compute-time error was to reduce the number of particles in our particle cloud to 1000. We could have also adjust the size and color of the particles and estimated robot pose pointer to make our visual clearer to understand. More tangentially, it could be exciting to implement one of the other optimal path-finding algorithms that we discussed in class. If we use the algorithm where we don't know the environment beforehand, I wonder how we might be able to observe the effects of a changing environment on the robot's behaviors. 
+
+## Takeaways
+* Talk to others from the class - other partner groups - about debugging tips, especially if they have experienced the same error as you already. We realized towards the end of the deadline for this assignment that a lot of us had experienced the same problems and errors (i.e. realizing that the axes in the Gazebo map are flipped, or that the yaw is in radians...). It would have been much more efficient for everyone if there was some place we could all share the errors we encountered and the solutions we discovered, so that every group does not have to try and re-invent the wheel.
+* Don't always blame the code if something is not working. We realized around 2.5 hours later of trying to debug code that the robot's Lidar sensor was not working properly, and it was not picking up distance measurements for surrounding objects. We thought it was something wrong with our program, but it was a hardware issue all along.
