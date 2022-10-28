@@ -17,7 +17,7 @@ import numpy as np
 from numpy.random import random_sample
 import math
 
-from random import randint, random, uniform, choices
+from random import randint, random, uniform, choices, gauss
 
 from likelihood_field import *
 
@@ -226,7 +226,12 @@ class ParticleFilter:
         # new_particle_array = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
 
         #self.particle_cloud = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
-        self.particle_cloud = choices(self.particle_cloud, weights = weightsarr, k = self.num_particles)
+        random_list = choices(self.particle_cloud, weights = weightsarr, k = self.num_particles)
+        #b newlist = []
+        self.particle_cloud = []
+        for p in random_list:
+            self.particle_cloud.append(copy.deepcopy(p))
+
          #new_p_arr_deepcopy = copy.deepcopy(new_particle_array)
 #        index = 0
 #        for p in new_particle_array:
@@ -274,7 +279,7 @@ class ParticleFilter:
             return
 
 
-        if len(self.particle_cloud)>0:
+        if self.particle_cloud:
 
             # check to see if we've moved far enough to perform an update
 
@@ -338,11 +343,12 @@ class ParticleFilter:
     def update_particle_weights_with_measurement_model(self, data):
         #return
         # Monte Carlo Localization (MCL) ALgorithm
-        lidar_angles = [90, 180, 270, 360]
+        lidar_angles = [np.pi/4, np.pi/2, .75*np.pi, np.pi, 1.25*np.pi, 1.5*np.pi, 1.75*np.pi, 2*np.pi]
+        lidar_angles_deg = [45, 90, 135, 180, 225, 270, 315, 360]
         robot_sensor_distances = []
         #index = 0
         # collect robot's sensor measurements for given angles:
-        for angle in lidar_angles:
+        for angle in lidar_angles_deg:
             robot_sensor_distances.append(data.ranges[angle - 1])
         # likelihood field for range finders algo
         # loop through each particle
@@ -401,20 +407,24 @@ class ParticleFilter:
         delta_yaw = curr_yaw - old_yaw
 
         for p in self.particle_cloud:
+            # makes some noise
+            move_noise_x = gauss(0, .069)
+            move_noise_y = gauss(0, .069)
+            move_noise_angle = gauss(0, np.pi/36)
             # for the partcle p to mimic a "sideways" movement from the robot:
             p_yaw = get_yaw_from_pose(p.pose)
             # for the particle p to mimix an "up"  movement from the robot:
             p_side = rob_hypot*math.sin(p_yaw + delta_yaw)
             p_up = rob_hypot*math.cos(p_yaw + delta_yaw)
             # update particle direction from robot's updated yaw
-            p_new_yaw = p_yaw + delta_yaw
+            p_new_yaw = p_yaw + delta_yaw + move_noise_angle
             p_new_yaw_quat = quaternion_from_euler(0.0, 0.0, p_new_yaw)
             p_new_dir = Quaternion(p_new_yaw_quat[0], p_new_yaw_quat[1], p_new_yaw_quat[2], p_new_yaw_quat[3])
             # set new particle pos. and yaw based off robot's movements:
             # the 'x' direction is UP
-            p.pose.position.x = p.pose.position.x + p_up*flag_dir
+            p.pose.position.x = p.pose.position.x + (p_up+move_noise_x)*flag_dir
             # the 'y' direction is SIDEWAYS
-            p.pose.position.y = p.pose.position.y + p_side*flag_dir
+            p.pose.position.y = p.pose.position.y + (p_side+move_noise_y)*flag_dir
             # particle's new yaw
             p.pose.orientation = p_new_dir
 
