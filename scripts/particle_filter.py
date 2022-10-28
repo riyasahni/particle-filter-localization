@@ -42,9 +42,8 @@ def compute_prob_zero_centered_gaussian(dist, sd):
 
 
 #def draw_random_sample(particle_cloud, num_particles):
-#   """ Draws a random sample of n elements from a given list of choices and their specified probabilities.
-#   We recommend that you fill in this function using random_sample.
-#    """
+# We commented this function out because we figured we could just put the code
+# in resample
 #
 #    TODO
 #    return
@@ -116,7 +115,11 @@ class ParticleFilter:
         # enable listening for and broadcasting corodinate transforms
         self.tf_listener = TransformListener()
         self.tf_broadcaster = TransformBroadcaster()
+
+        # generate the likelihood field
         self.likelihood = LikelihoodField()
+
+        # give things enough time to generate
         rospy.sleep(5)
         # intialize the particle cloud
         self.initialize_particle_cloud()
@@ -170,25 +173,15 @@ class ParticleFilter:
 
     def normalize_particles(self):
         # make all the particle weights sum to 1.0
-        # create a deep copy of the particle cloud to normalize
-        #dc = copy.deepcopy(self.particle_cloud)
+
+        # compute the total weight to know what to divide by
         totalweight = 0
-        tot_norm_weight = 0
         for p in self.particle_cloud:
             totalweight += p.w
-        print("totalweight: ", totalweight)
-        # index = 0
-        print("before ", self.particle_cloud[2].w)
+
+        # divide each particle by the total weight
         for p in self.particle_cloud:
-            #print("p: ", p.w)
-            p.w = round(p.w/totalweight, 5)
-          #  dc[index] = p
-          #  index += 1
-            tot_norm_weight += p.w
-        print("after ", self.particle_cloud[2].w)
-        #self.particle_cloud = dc
-        # print("particle weight arr: ", dc)
-        print("tot_norm_weight: ", tot_norm_weight)
+            p.w = p.w/totalweight
 
     def publish_particle_cloud(self):
 
@@ -212,7 +205,6 @@ class ParticleFilter:
 
 
     def resample_particles(self):
-        # return
         # initialize empty array for particle weights
         weightsarr = []
 
@@ -220,26 +212,13 @@ class ParticleFilter:
         for i in self.particle_cloud:
             weightsarr.append(i.w)
 
-        # regenerate particle array using weights of previous particles
-        # print("particle_weights: ", weights)
-
-        # new_particle_array = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
-
-        #self.particle_cloud = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
+        # randomly pick particles based on weights
         random_list = choices(self.particle_cloud, weights = weightsarr, k = self.num_particles)
-        #b newlist = []
         self.particle_cloud = []
+
+        # deep copy particles into the array, rather than pointing to instances
         for p in random_list:
             self.particle_cloud.append(copy.deepcopy(p))
-
-         #new_p_arr_deepcopy = copy.deepcopy(new_particle_array)
-#        index = 0
-#        for p in new_particle_array:
-#            newp = p
-#            self.particle_cloud[index] = newp
-#            index += 1
-       #  self.particle_cloud = new_particle_array
-        # deep copy of new_part_arr
 
     def robot_scan_received(self, data):
 
@@ -300,6 +279,7 @@ class ParticleFilter:
 
                 self.update_particle_weights_with_measurement_model(data)
 
+                # the function we use in resample does not require normalization of weight
                 #self.normalize_particles()
 
                 self.resample_particles()
@@ -341,49 +321,46 @@ class ParticleFilter:
         self.robot_estimate = newPose
 
     def update_particle_weights_with_measurement_model(self, data):
-        #return
         # Monte Carlo Localization (MCL) ALgorithm
+
+        # Generate the lists of angles in radians and degrees
         lidar_angles = [np.pi/4, np.pi/2, .75*np.pi, np.pi, 1.25*np.pi, 1.5*np.pi, 1.75*np.pi, 2*np.pi]
         lidar_angles_deg = [45, 90, 135, 180, 225, 270, 315, 360]
         robot_sensor_distances = []
-        #index = 0
         # collect robot's sensor measurements for given angles:
         for angle in lidar_angles_deg:
             robot_sensor_distances.append(data.ranges[angle - 1])
-        # likelihood field for range finders algo
-        # loop through each particle
+        # compute the max distance for cases when dist=nan, set to the max
         max_dist = max(robot_sensor_distances)
+
+        # loop through each particle
         for p in self.particle_cloud:
+            # start with the weight at 1
             q = 1
+
+            # set an index to iterate through the lidar_angles
             index = 0
             # loop through each laser range finder measurement recieved by robot
             for k in robot_sensor_distances:
-                print("k, dist: ", k)
+                # compute the projected x and y using the formula
                 p_projected_x = p.pose.position.x + k*math.cos(get_yaw_from_pose(p.pose) + lidar_angles[index])
                 p_projected_y = p.pose.position.y + k*math.sin(get_yaw_from_pose(p.pose) + lidar_angles[index])
-                # print("p_projected_x: ", p_projected_x)
-                # print("p_projected_y: ", p_projected_y)
-                # built-in func from likelihood_field.py
+
+                # built-in func from likelihood_field.py, to compute the
+                # distance from the nearest obstacle
                 dist = self.likelihood.get_closest_obstacle_distance(p_projected_x, p_projected_y)
+
+                # if dist is nan, the projection is out of bounds, so we make
+                # the dist the max dist in the array so that the weight will
+                # be low, as this is not a good prediction if the projection
+                # is out of bounds
                 if math.isnan(dist) == True:
                     dist  = max_dist # dist = max distance
-                        #print("HEREHEREHEHREHRHERHERHERHREHHRERHERHERHERHERHEHERHEREHRHER")
-                    #print("dist: ", dist)
                 q = q*compute_prob_zero_centered_gaussian(dist, 0.1)
-                # print("q: ", q)
-                # print("dist: ", dist)
-                # print("gaussian prob: ", compute_prob_zero_centered_gaussian(dist, 0.1))
-                # print("particle_weight1: ", q)
                 index += 1
-            print("particle_weight: ", q)
             p.w = q
-            #print("q: ", q)
-
-        # first compute what the sensor measurements of the robot would be if
-        # it were in the position of the particle
 
     def update_particles_with_motion_model(self):
-        #return
         # based on the how the robot has moved (calculated from its odometry), we'll  move
         # all of the particles correspondingly
 
@@ -407,7 +384,7 @@ class ParticleFilter:
         delta_yaw = curr_yaw - old_yaw
 
         for p in self.particle_cloud:
-            # makes some noise
+            # makes some noise for position and angle
             move_noise_x = gauss(0, .069)
             move_noise_y = gauss(0, .069)
             move_noise_angle = gauss(0, np.pi/36)
@@ -429,8 +406,6 @@ class ParticleFilter:
             p.pose.orientation = p_new_dir
 
 if __name__=="__main__":
-
-
     pf = ParticleFilter()
 
     rospy.spin()
