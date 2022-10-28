@@ -17,7 +17,7 @@ import numpy as np
 from numpy.random import random_sample
 import math
 
-from random import randint, random, uniform
+from random import randint, random, uniform, choices
 
 from likelihood_field import *
 
@@ -157,7 +157,8 @@ class ParticleFilter:
             # create random pose with random position and random direction
             randPose = Pose(randPoint, randDir)
             # create new random particle with average weight
-            sampleParticle = Particle(randPose, 1/self.num_particles)
+            particle_weight = round(1/self.num_particles, 5)
+            sampleParticle = Particle(randPose, particle_weight)
             self.particle_cloud.append(sampleParticle)
             # increase counter to generate another particle
             counter +=1
@@ -177,12 +178,14 @@ class ParticleFilter:
             totalweight += p.w
         print("totalweight: ", totalweight)
         # index = 0
+        print("before ", self.particle_cloud[2].w)
         for p in self.particle_cloud:
             #print("p: ", p.w)
-            p.w = p.w/totalweight
+            p.w = round(p.w/totalweight, 5)
           #  dc[index] = p
           #  index += 1
             tot_norm_weight += p.w
+        print("after ", self.particle_cloud[2].w)
         #self.particle_cloud = dc
         # print("particle weight arr: ", dc)
         print("tot_norm_weight: ", tot_norm_weight)
@@ -211,19 +214,19 @@ class ParticleFilter:
     def resample_particles(self):
         # return
         # initialize empty array for particle weights
-        weights = []
+        weightsarr = []
 
         # fill array with weights of existing particles
         for i in self.particle_cloud:
-            weights.append(i.w)
+            weightsarr.append(i.w)
 
         # regenerate particle array using weights of previous particles
         # print("particle_weights: ", weights)
 
         # new_particle_array = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
 
-        self.particle_cloud = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
-
+        #self.particle_cloud = np.random.choice(self.particle_cloud, self.num_particles, p=weights)
+        self.particle_cloud = choices(self.particle_cloud, weights = weightsarr, k = self.num_particles)
          #new_p_arr_deepcopy = copy.deepcopy(new_particle_array)
 #        index = 0
 #        for p in new_particle_array:
@@ -292,7 +295,7 @@ class ParticleFilter:
 
                 self.update_particle_weights_with_measurement_model(data)
 
-                self.normalize_particles()
+                #self.normalize_particles()
 
                 self.resample_particles()
 
@@ -335,7 +338,7 @@ class ParticleFilter:
     def update_particle_weights_with_measurement_model(self, data):
         #return
         # Monte Carlo Localization (MCL) ALgorithm
-        lidar_angles = [90, 180, 270, 0]
+        lidar_angles = [90, 180, 270, 360]
         robot_sensor_distances = []
         #index = 0
         # collect robot's sensor measurements for given angles:
@@ -350,21 +353,6 @@ class ParticleFilter:
             # loop through each laser range finder measurement recieved by robot
             for k in robot_sensor_distances:
                 print("k, dist: ", k)
-                #index = 0
-                #print(k)
-#                if math.isnan(k) == False: # check if robot sensor measures a valid object
-#                    p_projected_x = p.pose.position.x + k*math.cos(get_yaw_from_pose(p.pose) + lidar_angles[index])
-#                    p_projected_y = p.pose.position.y + k*math.sin(get_yaw_from_pose(p.pose) + lidar_angles[index])
-#                    # built-in func from likelihood_field.py
-#                    dist = self.likelihood.get_closest_obstacle_distance(p_projected_x, p_projected_y)
-#                    if math.isnan(dist) == True:
-#                        dist  = 0
-#                        #print("HEREHEREHEHREHRHERHERHERHREHHRERHERHERHERHERHEHERHEREHRHER")
-#                    #print("dist: ", dist)
-#                    q = q*compute_prob_zero_centered_gaussian(dist, 0.1)
-#                    print("dist: ", dist)
-#                    print("gaussian prob: ", compute_prob_zero_centered_gaussian(dist, 0.1))
-#                    print("particle_weight1: ", q)
                 p_projected_x = p.pose.position.x + k*math.cos(get_yaw_from_pose(p.pose) + lidar_angles[index])
                 p_projected_y = p.pose.position.y + k*math.sin(get_yaw_from_pose(p.pose) + lidar_angles[index])
                 # print("p_projected_x: ", p_projected_x)
@@ -381,28 +369,12 @@ class ParticleFilter:
                 # print("gaussian prob: ", compute_prob_zero_centered_gaussian(dist, 0.1))
                 # print("particle_weight1: ", q)
                 index += 1
-            #if q == 'nan':
-            #    print("is this helping?")
-            #    q = 0.0
             print("particle_weight: ", q)
             p.w = q
             #print("q: ", q)
 
-        ###########################################################################################
-        #get_closest_obstacle_distance(x,y) in likelihood_field.py
-            # returns 'nan' if robot senses something super far away (outside sensor range)
-            # in this case, the
-        #compute_prob_zero_centered_gaussian(dist, sd)
-
         # first compute what the sensor measurements of the robot would be if
         # it were in the position of the particle
-
-        #   i.e. p_senser_msmts= [0.5, 0.7, 0.2]
-        #   and assume robot_senser_msmts = [9, 8, 7]
-        # next, compute the weights for each particle for t = 1
-        #   new_p_weight = 1/(abs(9-0.5)+abs(8-0.7)+abs(7-0.2))
-        # repeat for t = 2, 3, ... as robot keeps moving and particle motion is updated
-
 
     def update_particles_with_motion_model(self):
         #return
