@@ -21,8 +21,9 @@ The goal of this project is to use Monte Carlo Localization to use particles to 
 
 To solve this problem, we had to randomly place particles on the map, making sure that we put them in valid locations, meaning not on obstacles or outside the maze. We then had to keep track of the robot's movements and make the particles move in the direction according to its orientation. We then had to incorporate the robot's sensor data, and project what that would look like for the particles, and then computing the nearest wall for the distances projected onto these particles. We then used a zero centered gaussian to compute the probability using this distance. This was used to reassign particle weight and make good particles more likely to survive. We then resampled our particles using these adjusted weights and updated our estimated location and orientation of the robot, usign an average of all the particles that survived.
 
-[gif1]
-[gif2]
+![ezgif com-gif-maker](https://user-images.githubusercontent.com/75453797/198522707-068304e7-81fd-4434-adc3-c620fd8f7ca5.gif)
+
+![ezgif com-gif-maker-2](https://user-images.githubusercontent.com/75453797/198522727-54584720-00ce-4ef3-86da-2eac4f9f80e2.gif)
 
 ## Challenges
 
